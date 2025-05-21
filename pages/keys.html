@@ -1,0 +1,160 @@
+﻿<h2>⌨️ Скрипты Arma 2</h2>
+<ul>
+    <li><b>В файле init.sqf добавьте:
+sqf
+// Сохраняем начальные параметры для игроков
+if (isServer) then {
+    missionNamespace setVariable ["pl1_params", [
+        {otschet=true}, 
+        {this setCaptive false}, 
+        {this addRating -10000}, 
+        {this addWeapon "Binocular_Vector"}, 
+        {box1_checked = false}, 
+        {box2_checked = false}, 
+        {box3_checked = false}, 
+        {Doc = 0}, 
+        {deleteopfor attachTo[player01,[0,0,0]]}
+    ]];
+    
+    missionNamespace setVariable ["pl2_params", [
+        {otschet=true}, 
+        {this setCaptive false}, 
+        {this addRating -10000}, 
+        {this addWeapon "Binocular_Vector"}, 
+        {box1_checked = false}, 
+        {box2_checked = false}, 
+        {box3_checked = false}, 
+        {Doc = 0}, 
+        {deleteopfor attachTo[player01,[0,0,0]]}
+    ]];
+    
+    // Маркеры для респавна (создайте их в редакторе)
+    respawnMarkers = ["respawn_west", "respawn_east"];
+    publicVariable "respawnMarkers";
+    publicVariable "pl1_params";
+    publicVariable "pl2_params";
+};
+2. Создайте файл onPlayerRespawn.sqf:
+sqf
+// Применяем параметры при респавне
+params ["_newUnit", "_oldUnit"];
+
+// Удаляем старый труп
+if (!isNull _oldUnit) then {
+    hideBody _oldUnit;
+    sleep 5;
+    deleteVehicle _oldUnit;
+};
+
+// Выбираем случайную точку респавна
+_respawnPos = getMarkerPos (selectRandom respawnMarkers);
+_newUnit setPos _respawnPos;
+
+// Применяем специфичные параметры для каждого игрока
+switch (str(_newUnit)) do {
+    case "pl1": {
+        {call _x} forEach (missionNamespace getVariable "pl1_params");
+        systemChat "Параметры pl1 восстановлены";
+    };
+    case "pl2": {
+        {call _x} forEach (missionNamespace getVariable "pl2_params");
+        systemChat "Параметры pl2 восстановлены";
+    };
+};
+
+// Общие настройки для всех игроков
+_newUnit allowDamage true;
+_newUnit enableSimulation true;
+3. В description.ext добавьте:
+cpp
+respawn = "BASE";
+respawnDelay = 10;
+respawnTemplates[] = {"Base"};
+respawnOnStart = 1;
+4. Настройте в редакторе:
+Создайте маркеры с именами respawn_west и respawn_east в нужных местах
+
+Убедитесь, что у юнитов pl1 и pl2 в инициализации стоит:
+
+sqf
+this setVariable ["BIS_enableRandomization", false];
+Как это работает:
+При первом запуске сохраняются все начальные параметры
+
+После смерти игрок респавнится через 10 секунд
+
+При респавне:
+
+Тело удаляется через 5 секунд
+
+Игрок появляется в случайной точке респавна
+
+Все начальные параметры восстанавливаются</b> — респавн в мультиплеере</li>
+    <li><b>заходим в игру и пишем определенному юниту(с которым хотим вести диалог):
+
+this allowDamage false;  this disableAI "MOVE";  this setDir 180; this addAction ["Поговорить с Алифатом", "alifat_dialog.sqf"]; Сам скрипт(отдельный файл):private ["_alifat","_player","_dialogMenu"];
+
+_alifat = _this select 0; // Алифат
+_player = _this select 1; // Игрок
+
+// Заголовок диалога
+_titleText = "<t color='#9E0000' size='1.3'>Алифат</t><br/><t size='0.9'>Местный информатор</t>";
+
+// Создаем диалоговое меню
+_dialogMenu = [
+    ["Разговор с Алифатом", true],
+    [parseText _titleText, [-1], "", -1, [["expression", ""]], "1", "0"],
+    ["Ты знаешь что-то про Кровавый алмаз?", [2], "", -5, [["expression", "
+        hint parseText '<t color=""#D22E2E"">Алифат оглядывается по сторонам и понижает голос:</t><br/><br/>Да, я слышал... ОРФ постоянно перемещают его между своими тайниками. Каждые 3 дня меняют точку...<br/><br/><t color=""#FFCC00"">*нервно озирается*</t>';
+    "]], "1", "1"],
+    ["Почему ты боишься?", [3], "", -5, [["expression", "
+        hint parseText '<t color=""#D22E2E"">Алифат дрожит:</t><br/><br/>Они убивают всех, кто знает слишком много... В прошлом месяце пропал мой сосед, просто спросил незнакомца про алмаз...<br/><br/><t color=""#FF0000"">*шепотом*</t> Говорят, за ним следит не только верхушка ОРФ!';
+    "]], "1", "1"],
+    ["Спасибо за информацию", [4], "", -5, [["expression", "
+        hint 'Алифат быстро уходит, оглядываясь через плечо';
+    "]], "1", "1"]
+];
+
+// Показываем меню
+showCommandingMenu "#USER:_dialogMenu";
+
+// Дополнительное сообщение в чат
+systemChat "Алифат: Тссс... не привлекайте внимание, когда будем говорить...";</b> — разговор с юнитом с своим текстом</li>
+    <li><b>СТАВИМ ГРАЖДАНСКИЙ АВТОМОБИЛЬ И ПИШЕМ В ИНИЦ:
+
+this lock true; 
+this addAction [
+    "<t color='#FF0000'>?? Чужая машина</t>",
+    {
+        hint "Эта машина принадлежит гражданскому водителю. Доступ закрыт!";
+    },
+    nil, 
+    1.5, 
+    true, 
+    true, 
+    "", 
+    "locked _target && player distance _target < 3",
+    3 
+];</b> — блокировка машины</li>
+    <li><b>чтобы создать над заложжником маркер в движении
+надо создать файл init
+туда прописать 
+// Создаем маркер над заложником (hostage1)
+_hostageMarker = createMarker ["HostageMarker", getPos hostage1];
+"HostageMarker" setMarkerType "hd_dot"; // Тип маркера (можно выбрать другой)
+"HostageMarker" setMarkerColor "ColorGreen"; // Цвет маркера
+"HostageMarker" setMarkerText "Заложник"; // Текст маркера
+"HostageMarker" setMarkerSize [0.5, 0.5]; // Размер маркера
+
+// Запускаем скрипт обновления позиции маркера
+[] spawn {
+    while {alive hostage1} do {
+        "HostageMarker" setMarkerPos (getPos hostage1); // Обновляем позицию маркера
+        sleep 0.1; // Частота обновления (чем меньше, тем плавнее)
+    };
+    deleteMarker "HostageMarker"; // Удаляем маркер, если юнит мертв
+};
+
+после этого добавить на карту в редакторе гражданского и приписать ему имя hostage1(либо другое имя, тогда все остальное нужно будет менять в скрипте)</b> — заложник(маркер)</li>
+</ul>
+<a href="../index.html">На главную</a>
